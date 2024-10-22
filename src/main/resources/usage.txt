@@ -1,0 +1,32 @@
+Usage: java-ebuilder <args>
+
+Generating ebuild:
+--download-uri|-u <uri>            uri that goes to SRC_URI
+--binjar-uri <uri>                 uri that goes to binary jar
+--test-src-uri <uri>               uri that goes to test-sources from Maven Central
+--dump-projects|-d                 outputs information about parsed projects
+                                   (useful for debugging)
+--ebuild|-e <file>                 path to ebuild that should be created
+--force-min-java-version <version> force minimum JDK/JRE version in dependencies
+--from-maven-central               make java-ebuilder inherit java-pkg-maven.eclass
+--generate-ebuild|-g               generates ebuild from pom.xml
+--keywords|-k <keywords>           arch keywords (can be specified multiple times)
+--license|-l <license>             license name, if it is not specified,
+                                   java-ebuilder will determine LICENSE from pom.xml
+--pom|-p <file>                    path to pom.xml that should be parsed,
+                                   the path must be relative to workdir (can be
+                                   specified multiple times)
+--skip-tests                       disable testing framework detecting
+--slot|-s  <slot>                  SLOT number
+--workdir|-w <dir>                 path to ebuild workdir (${WORKDIR}, default
+                                   is current directory)
+
+Refreshing cache:
+--portage-tree|-t                  path to portage tree that should be parsed
+                                   when refreshing cache (can be specified multiple
+                                   times, default is /usr/portage)
+--refresh-cache|-c                 refreshes java ebuild cache
+
+Common:
+--cache-file                       location of cache file (default is
+                                   ~/.java-ebuilder/cache)
