@@ -23,7 +23,7 @@ class EbuildParserTest {
     @ParameterizedTest
     @MethodSource("provideEbuilds")
     public void parsingEbuildShouldReturnMatchingModel(String ebuildFilePath, EbuildModel expectedEbuildModel) throws IOException {
-        Optional<EbuildModel> actual = ebuildParser.parseFile(ebuildFilePath);
+        Optional<EbuildModel> actual = ebuildParser.parseEbuild(ebuildFilePath);
 
         Assertions.assertEquals(expectedEbuildModel, actual.get());
     }

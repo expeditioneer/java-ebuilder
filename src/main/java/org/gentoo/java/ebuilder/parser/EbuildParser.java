@@ -2,24 +2,19 @@ package org.gentoo.java.ebuilder.parser;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.gentoo.java.ebuilder.exception.EmptyEbuildException;
 import org.gentoo.java.ebuilder.exception.MalformedEbuildException;
 import org.gentoo.java.ebuilder.model.EbuildModel;
 import org.gentoo.java.ebuilder.model.MavenCoordinates;
 import org.jboss.logging.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @ApplicationScoped
 public class EbuildParser {
@@ -32,32 +27,37 @@ public class EbuildParser {
     @ConfigProperty(name = "eclass.java_pkg_opt")
     String ECLASS_JAVA_PKG_OPT;
 
-    public Optional<EbuildModel> parseFile(String pathString) throws EmptyEbuildException, IOException {
-        List<String> ebuildContent = readFile(pathString);
-        // TODO: check if list is empty, if so skip next steps
+    public Optional<EbuildModel> parseEbuild(Path ebuildPath) {
+        try {
+            List<String> ebuildContent = readFile(ebuildPath);
 
-        EbuildModel ebuild = new EbuildModel();
+            EbuildModel ebuild = new EbuildModel();
 
-        ebuild.category = parseCategory(pathString);
-        ebuild.pn = parsePN(pathString);
-        ebuild.pvr = parsePVR(pathString, ebuild.pn);
+            ebuild.category = parseCategory(ebuildPath);
+            ebuild.pn = parsePN(ebuildPath);
+            ebuild.pvr = parsePVR(ebuildPath, ebuild.pn);
 
-        ebuildContent = substituteEbuildVariablesWithValues(ebuildContent, ebuild);
+            ebuildContent = substituteEbuildVariablesWithValues(ebuildContent, ebuild);
 
-        ebuild.javaEclass = parseEclasses(ebuildContent);
-        ebuild.slot = parseSlot(ebuildContent);
-        ebuild.useFlag = parseUseFlags(ebuildContent).orElse("");
-        ebuild.mavenCoordinates = parseMavenCoordinates(ebuildContent);
+            ebuild.javaEclass = parseEclasses(ebuildContent);
+            ebuild.slot = parseSlot(ebuildContent);
+            ebuild.useFlag = parseUseFlags(ebuildContent).orElse("");
+            ebuild.mavenCoordinates = parseMavenCoordinates(ebuildContent);
 
-        return Optional.of(ebuild);
+            return Optional.of(ebuild);
+        } catch (IOException e) {
+            LOG.error("Could not read ebuild file '" + ebuildPath + "'", e);
+            return Optional.empty();
+        }
     }
 
+    public Optional<EbuildModel> parseEbuild(String pathString) {
+        return parseEbuild(Path.of(pathString));
+    }
 
-    private List<String> readFile(String pathString) throws IOException {
-        Path filePath = Paths.get(pathString);
+    private List<String> readFile(Path ebuildPath) throws IOException {
         try {
-
-            return Files.readAllLines(filePath)
+            return Files.readAllLines(ebuildPath)
                     .stream()
                     .filter(Predicate.not(String::isEmpty))
                     .filter(Predicate.not(String::isBlank))
@@ -66,7 +66,7 @@ public class EbuildParser {
                     .toList();
 
         } catch (IOException e) {
-            LOG.error("Could not read File: '" + pathString + "'. Therefore skipping ...");
+            LOG.error("Could not read File: '" + ebuildPath);
             throw e;
         }
     }
@@ -98,34 +98,44 @@ public class EbuildParser {
                 .collect(Collectors.toList());
     }
 
-    private String parseCategory(String pathString) {
-        String[] a = pathString.split(Pattern.quote(File.separator));
-        return a[a.length - 3];
+    private String parseCategory(Path ebuildPath) {
+        return ebuildPath
+                .getParent()
+                .getParent()
+                .getFileName()
+                .toString();
     }
 
-    private String parsePN(String pathString) {
-        String[] a = pathString.split(Pattern.quote(File.separator));
-        return a[a.length - 2];
+    private String parsePN(Path ebuildPath) {
+        return ebuildPath
+                .getParent()
+                .getFileName()
+                .toString();
     }
 
-    private String parsePVR(String pathString, String packageName) {
-        String filename = Path.of(pathString).getFileName().toString();
-
-        return filename
+    private String parsePVR(Path ebuildPath, String packageName) {
+        return ebuildPath
+                .getFileName()
+                .toString()
                 .replaceAll(packageName + "-", "")
                 .replaceAll(".ebuild", "");
     }
 
-    private String parseSlot(List<String> ebuildContent) throws MalformedEbuildException {
-        return ebuildContent.stream()
-                .filter(line -> line.startsWith("SLOT"))
-                .findFirst()
-                .map(slot -> slot.split("=")[1])
-                .map(String::trim)
-                .map(slot -> slot.replaceAll("\"", ""))
-                .orElseThrow(MalformedEbuildException::new);
+    private String parseSlot(List<String> ebuildContent) {
+        try {
+            return ebuildContent.stream()
+                    .filter(line -> line.startsWith("SLOT"))
+                    .findFirst()
+                    .map(slot -> slot.split("=")[1])
+                    .map(String::trim)
+                    .map(slot -> slot.replaceAll("\"", ""))
+                    .orElseThrow(MalformedEbuildException::new);
+        } catch (MalformedEbuildException e) {
+            return "99999";
+        }
     }
 
+    // TODO: clarify 'USE Flags'
     private Optional<String> parseUseFlags(List<String> ebuildContent) {
         return ebuildContent.stream()
                 .filter(line -> line.startsWith("JAVA_PKG_OPT_USE"))
