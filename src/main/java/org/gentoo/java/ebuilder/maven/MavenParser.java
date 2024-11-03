@@ -1,67 +1,187 @@
 package org.gentoo.java.ebuilder.maven;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.gentoo.java.ebuilder.Config;
+import org.gentoo.java.ebuilder.parser.XMLUtilities;
+import org.jboss.logging.Logger;
+import org.jboss.shrinkwrap.resolver.api.maven.embedded.EmbeddedMaven;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.XMLConstants;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.gentoo.java.ebuilder.Config;
-import org.gentoo.java.ebuilder.maven.MavenLicenses;
+import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Parser for parsing pom.xml into project collector class.
- *
- * @author fordfrog
- */
+@ApplicationScoped
 public class MavenParser {
+    private static final Logger LOG = Logger.getLogger(MavenParser.class);
+
+    @Inject
+    XMLUtilities xmlUtilities;
+
+    @Inject
+    MavenXpp3Reader mavenXpp3Reader;
+
+    public List<Model> parsePomFile(Path pomXmlPath) {
+
+        List<Model> mavenModels = new ArrayList<>();
+        File effectivePom = getEffectivePom(pomXmlPath);
+
+        Document document = parsePOMtoDOMDocument(effectivePom);
+
+        if ("projects".equals(document.getDocumentElement().getNodeName())) {
+            LOG.info("Effective POM contains multiple projects");
+            NodeList nodeList = document.getElementsByTagName("project");
+
+            for (int i = 0; i < nodeList.getLength(); i++) {
+                DocumentBuilder builder = createDocumentBuilder(true);
+                Document mavenSingleProjectDocument = builder.newDocument();
+
+                Node importedNode = mavenSingleProjectDocument.importNode(nodeList.item(i), true);
+                mavenSingleProjectDocument.appendChild(importedNode);
+
+                mavenModels.add(readMavenProject(mavenSingleProjectDocument));
+            }
+        } else if ("project".equals(document.getDocumentElement().getNodeName())) {
+            LOG.info("Effective POM contains single project");
+            mavenModels.add(readMavenProject(effectivePom));
+        }
+
+        return mavenModels;
+    }
+
+    /**
+     * Stores effective pom to file and returns the file.
+     *
+     * @param pomXmlPath path to pom.xml file that should be processed
+     * @return path to effective pom
+     */
+    File getEffectivePom(Path pomXmlPath) {
+        File effectivePom;
+
+        try {
+            effectivePom = File.createTempFile("effective-pom-", ".xml");
+        } catch (IOException e) {
+            LOG.error("Failed to create temporary file for effective pom", e);
+            return null;
+        }
+
+        LOG.info("Retrieving effective pom for " + pomXmlPath + " into " + effectivePom + "...");
+
+        // TODO: clarify if .setQuiet() should be added
+        EmbeddedMaven.forProject(pomXmlPath.toFile())
+                .addProperty("output", effectivePom.toString())
+                .setGoals("help:effective-pom")
+                .build();
+
+        LOG.info("... done");
+
+        return effectivePom;
+    }
+
+    Document parsePOMtoDOMDocument(File effectivePom) {
+        DocumentBuilder documentBuilder = createDocumentBuilder(false);
+        try {
+            Document document = documentBuilder.parse(effectivePom);
+            // optional, but recommended
+            // http://stackoverflow.com/questions/13786607/normalization-in-dom-parsing-with-java-how-does-it-work
+            document.getDocumentElement().normalize();
+
+            return document;
+        } catch (SAXException e) {
+            LOG.error("Parsing error occurred", e);
+            throw new RuntimeException(e);
+        } catch (IOException e) {
+            LOG.error("Input output error occurred", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    DocumentBuilder createDocumentBuilder(boolean namespaceAware) {
+        DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+        try {
+            // optional, but recommended - process XML securely, avoid attacks like XML External Entities (XXE)
+            documentBuilderFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+            documentBuilderFactory.setNamespaceAware(namespaceAware);
+
+            return documentBuilderFactory.newDocumentBuilder();
+        } catch (ParserConfigurationException e) {
+            LOG.error("Could not create XML Document Builder", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    Model readMavenProject(Document document) {
+        InputStream mavenProject = xmlUtilities.createInputStream(document);
+        return readMavenProject(mavenProject);
+    }
+
+    Model readMavenProject(File file) {
+        try {
+            return readMavenProject(new FileInputStream(file));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    Model readMavenProject(InputStream inputStream) {
+        try {
+            return mavenXpp3Reader.read(inputStream);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (XmlPullParserException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 
     /**
      * Parses specified pom.xml files.
      *
      * @param config     application configuration
      * @param mavenCache maven cache
-     *
      * @return list of maven projects
      */
-    public List<MavenProject> parsePomFiles(final Config config,
-            final MavenCache mavenCache) {
-        final List<MavenProject> result
-                = new ArrayList<>(config.getPomFiles().size());
+    public List<MavenProject> parsePomFiles(Config config, MavenCache mavenCache) {
+        List<MavenProject> result = new ArrayList<>(config.getPomFiles().size());
 
-        config.getPomFiles().stream().forEach((pomFile) -> {
-            final File effectivePom = getEffectivePom(config, pomFile);
+        config.getPomFiles().stream()
+                .forEach((pomFile) -> {
+                    File effectivePom = getEffectivePom(pomFile);
 
-            final MavenProject mavenProject = parsePom(config, mavenCache,
-                    pomFile, effectivePom);
+                    MavenProject mavenProject = parsePom(mavenCache, pomFile, effectivePom);
 
-            // TODO: I suppose they should go to "POJO" tests
-            if (mavenProject.hasTests()
-                    && mavenProject.getTestDependencies().isEmpty()) {
-                mavenProject.addDependency(new MavenDependency(
-                        "junit", "junit", "4.11", "test",
-                        mavenCache.getDependency("junit", "junit", "4.11")));
-            }
+                    // TODO: I suppose they should go to "POJO" tests
+                    if (mavenProject.hasTests() && mavenProject.getTestDependencies().isEmpty()) {
+                        mavenProject.addDependency(new MavenDependency("junit", "junit", "4.11", "test", mavenCache.getDependency("junit", "junit", "4.11")));
+                    }
 
-            if (config.hasTestSrcUri()) {
-                mavenProject.setHasTests(true);
-            }
+                    if (config.hasTestSrcUri()) {
+                        mavenProject.setHasTests(true);
+                    }
 
-            if (config.willSkipTests()) {
-                mavenProject.setHasTests(false);
-            }
+                    if (config.willSkipTests()) {
+                        mavenProject.setHasTests(false);
+                    }
 
-            result.add(mavenProject);
-        });
+                    result.add(mavenProject);
+                });
 
         return result;
     }
@@ -70,12 +190,9 @@ public class MavenParser {
      * Consumes current element.
      *
      * @param reader XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while parsing the
-     *                            element.
+     * @throws XMLStreamException Thrown if problem occurred while parsing the element.
      */
-    private void consumeElement(final XMLStreamReader reader)
-            throws XMLStreamException {
+    void consumeElement(XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -88,99 +205,13 @@ public class MavenParser {
     }
 
     /**
-     * Stores effective pom to file and returns the file.
-     *
-     * @param config  application configuration
-     * @param pomFile path to pom.xml file that should be processed
-     *
-     * @return path to effective pom
-     */
-    private File getEffectivePom(final Config config, final Path pomFile) {
-        final File outputPath;
-
-        try {
-            outputPath = File.createTempFile("pom", ".xml");
-        } catch (final IOException ex) {
-            throw new RuntimeException("Failed to create temporary file for "
-                    + "effective pom", ex);
-        }
-
-        config.getStdoutWriter().print("Retrieving effective pom for "
-                + pomFile + " into " + outputPath + "...");
-
-        final ProcessBuilder processBuilder = new ProcessBuilder("mvn", "-f",
-                pomFile.toString(), "help:effective-pom",
-                // If output was not suppressed, mvn would hang indefinitely
-                // if new artifact should be downloaded, probably because of
-                // limited output stream buffer size
-                "-q",
-                "-Doutput=" + outputPath);
-        processBuilder.directory(config.getWorkdir().toFile());
-        final ProcessBuilder xmlBuilder = new ProcessBuilder("simple-xml-formatter",
-                "" + outputPath);
-        xmlBuilder.directory(config.getWorkdir().toFile());
-
-        final Process process;
-
-        try {
-            process = processBuilder.start();
-        } catch (final IOException ex) {
-            throw new RuntimeException("Failed to run mvn command", ex);
-        }
-
-        try {
-            process.waitFor(10, TimeUnit.MINUTES);
-        } catch (final InterruptedException ex) {
-            config.getErrorWriter().println("ERROR: mvn process did not finish "
-                    + "within 10 minute, exiting.");
-            Runtime.getRuntime().exit(1);
-        }
-
-        final Process xmlProcess;
-        try {
-            xmlProcess = xmlBuilder.start();
-            xmlProcess.waitFor(10, TimeUnit.MINUTES);
-        } catch (final IOException | InterruptedException ex) {
-            config.getStdoutWriter().print("");
-            //config.getStdoutWriter().println('\n' + ex.toString());
-        }
-
-        if (process.exitValue() != 0) {
-            config.getErrorWriter().println(
-                    "ERROR: Failed to run mvn command:");
-
-            try (final BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getErrorStream()))) {
-                String line = reader.readLine();
-
-                while (line != null) {
-                    config.getErrorWriter().println(line);
-                    line = reader.readLine();
-                }
-            } catch (final IOException ex) {
-                throw new RuntimeException(
-                        "Failed to read mvn command error output", ex);
-            }
-
-            Runtime.getRuntime().exit(1);
-        }
-
-        config.getStdoutWriter().println("done");
-
-        return outputPath;
-    }
-
-    /**
      * Parses build plugin.
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseBuildPlugin(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseBuildPlugin(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         String artifactId = null;
 
         while (reader.hasNext()) {
@@ -210,13 +241,9 @@ public class MavenParser {
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
      * @param artifactId   plugin artifact id
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseBuildPluginConfiguration(final MavenProject mavenProject,
-            final XMLStreamReader reader, final String artifactId)
-            throws XMLStreamException {
+    private void parseBuildPluginConfiguration(MavenProject mavenProject, XMLStreamReader reader, String artifactId) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -233,8 +260,7 @@ public class MavenParser {
                         break;
                     case "source":
                         if ("maven-compiler-plugin".equals(artifactId)) {
-                            mavenProject.setSourceVersion(
-                                    new JavaVersion(reader.getElementText()));
+                            mavenProject.setSourceVersion(new JavaVersion(reader.getElementText()));
                         } else {
                             consumeElement(reader);
                         }
@@ -242,8 +268,7 @@ public class MavenParser {
                         break;
                     case "target":
                         if ("maven-compiler-plugin".equals(artifactId)) {
-                            mavenProject.setTargetVersion(
-                                    new JavaVersion(reader.getElementText()));
+                            mavenProject.setTargetVersion(new JavaVersion(reader.getElementText()));
                         } else {
                             consumeElement(reader);
                         }
@@ -263,13 +288,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseBuildPluginConfigurationArchive(
-            final MavenProject mavenProject, final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseBuildPluginConfigurationArchive(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -292,12 +313,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseBuildPlugins(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseBuildPlugins(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -318,12 +336,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseManifest(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseManifest(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -342,32 +357,25 @@ public class MavenParser {
     }
 
     /**
-     * Parses the pom file and returns maven project instance containing
-     * collected information.
+     * Parses the pom file and returns maven project instance containing collected information.
      *
-     * @param config       application configuration
      * @param mavenCache   maven cache
      * @param pomFile      path to pom.xml file
      * @param effectivePom path to effective pom
-     *
      * @return maven project instance
      */
-    private MavenProject parsePom(final Config config,
-            final MavenCache mavenCache, final Path pomFile,
-            final File effectivePom) {
-        config.getStdoutWriter().print("Parsing effective pom...");
+    private MavenProject parsePom(MavenCache mavenCache, Path pomFile, File effectivePom) {
+        LOG.info("Parsing effective pom...");
 
-        final XMLStreamReader reader;
+        XMLStreamReader reader;
 
         try {
-            reader = XMLInputFactory.newInstance().createXMLStreamReader(
-                    new FileInputStream(effectivePom));
-        } catch (final FactoryConfigurationError | FileNotFoundException |
-                XMLStreamException ex) {
-            throw new RuntimeException("Failed to read effective pom", ex);
+            reader = XMLInputFactory.newInstance().createXMLStreamReader(new FileInputStream(effectivePom));
+        } catch (FactoryConfigurationError | FileNotFoundException | XMLStreamException e) {
+            throw new RuntimeException("Failed to read effective pom", e);
         }
 
-        final MavenProject mavenProject = new MavenProject(pomFile);
+        MavenProject mavenProject = new MavenProject(pomFile);
 
         try {
             while (reader.hasNext()) {
@@ -386,11 +394,11 @@ public class MavenParser {
                     }
                 }
             }
-        } catch (final XMLStreamException ex) {
-            throw new RuntimeException("Failed to parse effective pom", ex);
+        } catch (XMLStreamException e) {
+            throw new RuntimeException("Failed to parse effective pom", e);
         }
 
-        config.getStdoutWriter().println("done");
+        LOG.info("done");
 
         return mavenProject;
     }
@@ -400,13 +408,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseProject(final MavenProject mavenProject,
-            final MavenCache mavenCache, final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseProject(MavenProject mavenProject, MavenCache mavenCache, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -455,12 +459,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseProjectBuild(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseProjectBuild(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -498,13 +499,9 @@ public class MavenParser {
      * @param mavenProject maven project instance
      * @param mavenCache   maven cache
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseProjectDependencies(final MavenProject mavenProject,
-            final MavenCache mavenCache, final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseProjectDependencies(MavenProject mavenProject, MavenCache mavenCache, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -528,13 +525,9 @@ public class MavenParser {
      * @param mavenProject maven project instance
      * @param mavenCache   maven cache
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseProjectDependency(final MavenProject mavenProject,
-            final MavenCache mavenCache, final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseProjectDependency(MavenProject mavenProject, MavenCache mavenCache, XMLStreamReader reader) throws XMLStreamException {
         String groupId = null;
         String artifactId = null;
         String version = null;
@@ -555,8 +548,7 @@ public class MavenParser {
                         scope = reader.getElementText();
                         break;
                     case "version":
-                        version = reader.getElementText().replace(
-                                "-SNAPSHOT", "");
+                        version = reader.getElementText().replace("-SNAPSHOT", "");
 
                         /* crazy version from
                          * org.khronos:opengl-api:gl1.1-android-2.1_r1 */
@@ -569,9 +561,7 @@ public class MavenParser {
                         consumeElement(reader);
                 }
             } else if (reader.isEndElement()) {
-                mavenProject.addDependency(new MavenDependency(groupId,
-                        artifactId, version, scope, mavenCache.getDependency(
-                                groupId, artifactId, version)));
+                mavenProject.addDependency(new MavenDependency(groupId, artifactId, version, scope, mavenCache.getDependency(groupId, artifactId, version)));
 
                 return;
             }
@@ -583,13 +573,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading the
-     *                            XML stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading the XML stream.
      */
-    private void parseProjectLicenses(final MavenProject mavenProject,
-            final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseProjectLicenses(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         MavenLicenses mavenLic = new MavenLicenses();
 
         while (reader.hasNext()) {
@@ -614,13 +600,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading the
-     *                            XML stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading the XML stream.
      */
-    private void parseProjectLicense(final MavenLicenses mavenLicenses,
-            final MavenProject mavenProject, final XMLStreamReader reader)
-            throws XMLStreamException {
+    private void parseProjectLicense(MavenLicenses mavenLicenses, MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -629,7 +611,7 @@ public class MavenParser {
                     case "name":
                         mavenProject.addLicense(
                                 mavenLicenses.getEquivalentLicense(
-                                reader.getElementText()));
+                                        reader.getElementText()));
                         break;
                     default:
                         consumeElement(reader);
@@ -645,12 +627,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading the
-     *                            XML stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading the XML stream.
      */
-    private void parseProjectProperties(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseProjectProperties(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -681,12 +660,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseResource(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseResource(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -710,12 +686,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseResources(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseResources(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -738,12 +711,10 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
      * @throws XMLStreamException Thrown if problem occurred while reading XML
      *                            stream.
      */
-    private void parseTestResource(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseTestResource(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 
@@ -767,12 +738,9 @@ public class MavenParser {
      *
      * @param mavenProject maven project instance
      * @param reader       XML stream reader
-     *
-     * @throws XMLStreamException Thrown if problem occurred while reading XML
-     *                            stream.
+     * @throws XMLStreamException Thrown if problem occurred while reading XML stream.
      */
-    private void parseTestResources(final MavenProject mavenProject,
-            final XMLStreamReader reader) throws XMLStreamException {
+    private void parseTestResources(MavenProject mavenProject, XMLStreamReader reader) throws XMLStreamException {
         while (reader.hasNext()) {
             reader.next();
 

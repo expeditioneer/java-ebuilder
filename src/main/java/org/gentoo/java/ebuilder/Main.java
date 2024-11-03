@@ -12,6 +12,9 @@ import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import org.apache.maven.model.Model;
 import org.gentoo.java.ebuilder.maven.JavaVersion;
 import org.gentoo.java.ebuilder.maven.MavenCache;
 import org.gentoo.java.ebuilder.maven.MavenEbuilder;
@@ -19,11 +22,7 @@ import org.gentoo.java.ebuilder.maven.MavenParser;
 import org.gentoo.java.ebuilder.maven.MavenProject;
 import org.gentoo.java.ebuilder.portage.PortageParser;
 
-/**
- * Main class.
- *
- * @author fordfrog
- */
+@ApplicationScoped
 public class Main {
 
     /**
@@ -70,14 +69,12 @@ public class Main {
 
             for (Path portageTree : config.getPortageTree()) {
                 if (!portageTree.toFile().exists()) {
-                    config.getErrorWriter().println("ERROR: Portage tree "
-                            + portageTree + " does not exist.");
+                    config.getErrorWriter().println("ERROR: Portage tree " + portageTree + " does not exist.");
                     Runtime.getRuntime().exit(1);
                 }
             }
         } else if (!config.getPortageTree().isEmpty()) {
-            config.getErrorWriter().println("WARNING: Portage tree is used "
-                    + "only when refreshing cache.");
+            config.getErrorWriter().println("WARNING: Portage tree is used only when refreshing cache.");
         }
 
         if (config.isGenerateEbuild()) {
@@ -116,10 +113,8 @@ public class Main {
             config.getPomFiles().stream().forEach((pomFile) -> {
                 final File fullPath
                         = config.getWorkdir().resolve(pomFile).toFile();
-
                 if (!fullPath.exists()) {
-                    config.getErrorWriter().println("ERROR: POM file "
-                            + fullPath + " does not exist.");
+                    config.getErrorWriter().println("ERROR: POM file " + fullPath + " does not exist.");
                     Runtime.getRuntime().exit(1);
                 }
             });
@@ -128,32 +123,23 @@ public class Main {
                 config.setSlot("0");
             }
         } else if (config.getDownloadUri() != null) {
-            config.getErrorWriter().println("WARNING: Download URI is used "
-                    + "only when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Download URI is used only when generating ebuild.");
         } else if (config.isDumpProjects()) {
-            config.getErrorWriter().println("WARNING: Dumping of projects can "
-                    + "be used only when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Dumping of projects can be used only when generating ebuild.");
         } else if (config.getEbuild() != null) {
-            config.getErrorWriter().println(
-                    "WARNING: Ebuild is used only when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Ebuild is used only when generating ebuild.");
         } else if (config.getForceMinJavaVersion() != null) {
-            config.getErrorWriter().println("WARNING: Forcing minimum JDK/JRE "
-                    + "version applies only when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Forcing minimum JDK/JRE version applies only when generating ebuild.");
         } else if (config.getKeywords() != null) {
-            config.getErrorWriter().println("WARNING: Keywords are used only "
-                    + "when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Keywords are used only when generating ebuild.");
         } else if (config.getLicense() != null) {
-            config.getErrorWriter().println("WARNING: License is used only "
-                    + "when generating ebuild.");
+            config.getErrorWriter().println("WARNING: License is used only when generating ebuild.");
         } else if (!config.getPomFiles().isEmpty()) {
-            config.getErrorWriter().println("WARNING: pom.xml is used only "
-                    + "when generating ebuild.");
+            config.getErrorWriter().println("WARNING: pom.xml is used only when generating ebuild.");
         } else if (config.getSlot() != null) {
-            config.getErrorWriter().println("WARNING: SLOT is used only when "
-                    + "generating ebuild.");
+            config.getErrorWriter().println("WARNING: SLOT is used only when generating ebuild.");
         } else if (config.getWorkdir() != null) {
-            config.getErrorWriter().println("WARNING: Workdir is used only "
-                    + "when generating ebuild.");
+            config.getErrorWriter().println("WARNING: Workdir is used only when generating ebuild.");
         }
 
         if (!config.isRefreshCache()
@@ -164,16 +150,13 @@ public class Main {
         }
     }
 
-    private static void dumpMavenProjects(final Config config,
-            final List<MavenProject> mavenProjects) {
+    private static void dumpMavenProjects(Config config, List<MavenProject> mavenProjects) {
         int i = 0;
 
         for (final MavenProject mavenProject : mavenProjects) {
-            config.getStdoutWriter().println(MessageFormat.format(
-                    "\n===== PROJECT {0} DUMP START =====", i));
+            config.getStdoutWriter().println(MessageFormat.format("\n===== PROJECT {0} DUMP START =====", i));
             mavenProject.dump(config.getStdoutWriter());
-            config.getStdoutWriter().println(MessageFormat.format(
-                    "===== PROJECT {0} DUMP END =====", i));
+            config.getStdoutWriter().println(MessageFormat.format("===== PROJECT {0} DUMP END =====", i));
 
             i++;
         }
@@ -193,15 +176,18 @@ public class Main {
         mavenCache.loadCache(config);
 
         final MavenParser mavenParser = new MavenParser();
-        final List<MavenProject> mavenProjects
-                = mavenParser.parsePomFiles(config, mavenCache);
+        final List<MavenProject> mavenProjects = mavenParser.parsePomFiles(config, mavenCache);
 
+        List<Model> mavenModels = mavenParser.parsePomFile(config.getPomFiles().get(0));
+
+
+        // TODO: replace with logging
         if (config.isDumpProjects()) {
             dumpMavenProjects(config, mavenProjects);
         }
 
         final MavenEbuilder mavenEbuilder = new MavenEbuilder();
-        mavenEbuilder.generateEbuild(config, mavenProjects, mavenCache);
+        mavenEbuilder.generateEbuild(config, mavenProjects);
     }
 
     /**
@@ -360,8 +346,7 @@ public class Main {
      */
     private static void printUsage(final Config config) {
         try (final BufferedReader reader = new BufferedReader(
-                new InputStreamReader(Main.class.getResourceAsStream(
-                        "/usage.txt")))) {
+                new InputStreamReader(Main.class.getResourceAsStream("/usage.txt")))) {
             reader.lines().forEach((String line) -> {
                 config.getStdoutWriter().println(line);
             });

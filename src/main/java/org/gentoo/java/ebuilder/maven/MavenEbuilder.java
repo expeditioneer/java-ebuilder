@@ -64,15 +64,11 @@ public class MavenEbuilder {
      *
      * @param config        application configuration
      * @param mavenProjects list of maven project information
-     * @param mavenCache    populated maven cache
      */
-    public void generateEbuild(final Config config,
-            final List<MavenProject> mavenProjects,
-            final MavenCache mavenCache) {
+    public void generateEbuild(Config config, List<MavenProject> mavenProjects) {
         config.getStdoutWriter().print("Writing ebuild...");
 
-        try (final PrintWriter writer = new PrintWriter(
-                new FileWriter(config.getEbuild().toFile()))) {
+        try (final PrintWriter writer = new PrintWriter(new FileWriter(config.getEbuild().toFile()))) {
             writeHeader(writer);
             writeCommand(config, writer);
             writeEAPI(writer);

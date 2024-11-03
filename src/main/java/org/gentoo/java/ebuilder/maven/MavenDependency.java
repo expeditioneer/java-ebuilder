@@ -7,6 +7,8 @@ import org.gentoo.java.ebuilder.portage.MavenVersion;
  *
  * @author fordfrog
  */
+// TODO: must be replaced with org.apache.maven.model.Dependency - maybe builder Necessary
+@Deprecated(forRemoval = true)
 public class MavenDependency {
 
     /**
