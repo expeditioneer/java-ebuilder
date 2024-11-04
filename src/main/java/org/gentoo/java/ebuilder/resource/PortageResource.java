@@ -9,7 +9,7 @@ import java.util.List;
 @Path("/portage")
 @Produces(MediaType.TEXT_PLAIN)
 @Consumes(MediaType.APPLICATION_JSON)
-public class Portage {
+public class PortageResource {
 
     @GET
     public List get() {
