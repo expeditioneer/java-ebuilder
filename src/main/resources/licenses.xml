@@ -1,0 +1,147 @@
+<licenses>
+    <license mavenlicense="bouncy castle licence" gentoolicense="BSD"
+             description="according to dev-java/bcpkix::gentoo"/>
+    <license mavenlicense="bsd-like" gentoolicense="BSD" description="according to dev-lang/scala::gentoo"/>
+    <license mavenlicense="3-clause bsd license" gentoolicense="BSD"/>
+    <license mavenlicense="apache 2" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache-2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache 2.0 license" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license" gentoolicense="Apache"/>
+    <license mavenlicense="apache license 2" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license, 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license v2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license version 2" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license, version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache license, version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache public license 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache software license, version 1.1" gentoolicense="Apache-1.1"/>
+    <license mavenlicense="apache software license - version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="apache v2" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="asf 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="asl" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="asl 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="asl, version 2" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="bsd" gentoolicense="BSD-1"/>
+    <license mavenlicense="bsd 2-clause" gentoolicense="BSD-2"/>
+    <license mavenlicense="bsd-2-clause" gentoolicense="BSD-2"/>
+    <license mavenlicense="bsd 2-clause license" gentoolicense="BSD-2"/>
+    <license mavenlicense="bsd 3-clause" gentoolicense="BSD"/>
+    <license mavenlicense="bsd-3-clause" gentoolicense="BSD"/>
+    <license mavenlicense="bsd licence" gentoolicense="BSD-1"/>
+    <license mavenlicense="bsd license" gentoolicense="BSD-1"/>
+    <license mavenlicense="bsd style" gentoolicense="BSD"/>
+    <license mavenlicense="cc0" gentoolicense="CC0-1.0"/>
+    <license mavenlicense="cddl 1.0" gentoolicense="CDDL"/>
+    <license mavenlicense="cddl 1.1" gentoolicense="CDDL-1.1"/>
+    <license mavenlicense="cddl+gpl license" gentoolicense="CDDL:GPL-1"/>
+    <license mavenlicense="cddl/gplv2+ce" gentoolicense="|| ( CDDL GPL-2-with-classpath-exception)"/>
+    <license mavenlicense="cddl + gplv2 with classpath exception" gentoolicense="CDDL:GPL-2-with-classpath-exception"/>
+    <license mavenlicense="cddl license" gentoolicense="CDDL"/>
+    <license mavenlicense="cddl v1.1 / gpl v2 dual license" gentoolicense="CDDL-1.1:GPL-2"/>
+    <license mavenlicense="common development and distribution license" gentoolicense="CDDL"/>
+    <license mavenlicense="common development and distribution license (cddl) plus gpl" gentoolicense="CDDL:GPL-1"/>
+    <license mavenlicense="common development and distribution license (cddl) v1.0" gentoolicense="CDDL"/>
+    <license mavenlicense="common development and distribution license (cddl) version 1.0" gentoolicense="CDDL"/>
+    <license mavenlicense="common public license - v 1.0" gentoolicense="CPL-1.0"/>
+    <license mavenlicense="common public license version 1.0" gentoolicense="CPL-1.0"/>
+    <license mavenlicense="dual license consisting of the cddl v1.1 and gpl v2" gentoolicense="CDDL-1.1:GPL-2"/>
+    <license mavenlicense="eclipse distribution license (edl), version 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse distribution license - v 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse distribution license v. 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="eclipse public license (epl), version 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license - v 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license v1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license - v 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="eclipse public license v. 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="eclipse public license v2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="eclipse public license - version 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license, version 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="eclipse public license - version 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="eclipse public license, version 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="edl 1.0" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="epl" gentoolicense="EPL-1.0"/>
+    <license mavenlicense="epl 2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="epl-2.0" gentoolicense="EPL-2.0"/>
+    <license mavenlicense="gnu general lesser public license (lgpl) version 3.0" gentoolicense="LGPL-3"/>
+    <license mavenlicense="gnu general public library" gentoolicense="GPL-1"/>
+    <license mavenlicense="gnu general public license, version 2" gentoolicense="GPL-2"/>
+    <license mavenlicense="gnu general public license version 2" gentoolicense="GPL-2"/>
+    <license mavenlicense="gnu general public license, version 2 with the classpath exception"
+             gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="gnu general public license, version 2, with the classpath exception"
+             gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="gnu general public license, version 2 with the gnu classpath exception"
+             gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="gnu lesser general public licence" gentoolicense="LGPL-3"/>
+    <license mavenlicense="gnu lesser general public license" gentoolicense="LGPL-3"/>
+    <license
+            mavenlicense="gnu lesser general public license as published by the free software foundation; either version 2.1 of the license, or (at your option) any later version."
+            gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="gnu lesser general public license (lgpl)" gentoolicense="LGPL-3"/>
+    <license mavenlicense="gnu lesser general public license (lgpl), version 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="gnu lesser general public license v2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="gnu lesser general public license version 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="gnu lesser general public license, version 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="gnu lesser public license" gentoolicense="LGPL-3"/>
+    <license mavenlicense="gnu lgplv3" gentoolicense="LGPL-3"/>
+    <license mavenlicense="gnu library general public license v2.1 or later" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="go license" gentoolicense="BSD"/>
+    <license mavenlicense="gpl-2.0" gentoolicense="GPL-2"/>
+    <license mavenlicense="gpl-2.0-with-classpath-exception" gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="gpl2 w/ cpe" gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="gpl 3" gentoolicense="GPL-3"/>
+    <license mavenlicense="gpl v2" gentoolicense="GPL-2"/>
+    <license mavenlicense="gpl v2 with classpath exception" gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="hsqldb license" gentoolicense="BSD"/>
+    <license mavenlicense="indiana university extreme! lab software license"
+             gentoolicense="Indiana-University-Extreme-Lab"/>
+    <license mavenlicense="indiana university extreme! lab software license 1.1.1"
+             gentoolicense="Indiana-University-Extreme-Lab"/>
+    <license mavenlicense="indiana university extreme! lab software license, vesion 1.1.1"
+             gentoolicense="Indiana-University-Extreme-Lab"/>
+    <license mavenlicense="jquery license" gentoolicense="MIT:CC0-1.0"/>
+    <license mavenlicense="jsr-000107 jcache 2.9 public review - updated specification license"
+             gentoolicense="Apache-2.0"/>
+    <license mavenlicense="lgpl" gentoolicense="LGPL-3"/>
+    <license mavenlicense="lgpl 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="lgpl-2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="lgpl 3" gentoolicense="LGPL-3"/>
+    <license mavenlicense="lgplv2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="lgpl, version 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="mit license" gentoolicense="MIT"/>
+    <license mavenlicense="modified bsd" gentoolicense="BSD"/>
+    <license mavenlicense="mozilla public license 1.1 (mpl 1.1)" gentoolicense="MPL-1.1"/>
+    <license mavenlicense="mozilla public license version 2.0" gentoolicense="MPL-2.0"/>
+    <license mavenlicense="mpl 1.1" gentoolicense="MPL-1.1"/>
+    <license mavenlicense="mpl 2.0 or epl 1.0" gentoolicense="|| ( MPL-1.1 EPL-1.0 )"/>
+    <license mavenlicense="new bsd license" gentoolicense="BSD"/>
+    <license mavenlicense="provided without support or warranty" gentoolicense="JSON"/>
+    <license mavenlicense="public domain" gentoolicense="public-domain"/>
+    <license mavenlicense="public domain, per creative commons cc0" gentoolicense="public-domain"/>
+    <license mavenlicense="public domain, sun microsoystems" gentoolicense="public-domain"/>
+    <license mavenlicense="revised bsd" gentoolicense="BSD"/>
+    <license mavenlicense="similar to apache license but with the acknowledgment clause removed"
+             gentoolicense="Apache-2.0"/>
+    <license mavenlicense="spec evaluation license" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="spec implementation license" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="the apache license, version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="the apache software license, version 2.0" gentoolicense="Apache-2.0"/>
+    <license mavenlicense="the bsd 2-clause license" gentoolicense="BSD-2"/>
+    <license mavenlicense="the bsd 3-clause license" gentoolicense="BSD"/>
+    <license mavenlicense="the bsd license" gentoolicense="BSD"/>
+    <license mavenlicense="the gnu general public license (gpl), version 2, with classpath exception"
+             gentoolicense="GPL-2-with-classpath-exception"/>
+    <license mavenlicense="the gnu lesser general public license, version 2.1" gentoolicense="LGPL-2.1"/>
+    <license mavenlicense="the go license" gentoolicense="BSD"/>
+    <license mavenlicense="the json license" gentoolicense="JSON"/>
+    <license mavenlicense="the mit license" gentoolicense="MIT"/>
+    <license mavenlicense="the new bsd license" gentoolicense="BSD"/>
+    <license mavenlicense="universal permissive license, version 1.0" gentoolicense="UPL-1.0"/>
+    <license mavenlicense="w3c license" gentoolicense="W3C"/>
+</licenses>
